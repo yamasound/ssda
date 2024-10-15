@@ -18,13 +18,26 @@ conv <- function(tag){
 
 work_dir = '~/Downloads'
 
+# 「基盤地図情報ダウンロードデータファイル仕様書4.1」参照
 tags <- c(
-     'WA',      # 水域
-     'WL',      # 河川
-     'BldA',    # 建物 
-     'RailCL',  # 鉄道
-     'AdmArea', # 市区町村のポリゴン
-     'AdmBdry'  # 市区町村のライン
+    'GCP',      # 測量の基準点
+    'ElevPt',   # 標高点
+    'Cntr',     # 等高線
+    'AdmBdry',  # 行政区画界線
+    'CommBdry', # 町字界線
+    'AdmPt',    # 行政区画代表点
+    'CommPt',   # 町字の代表点
+    'AdmArea',  # 行政区画
+    'Cstline',  # 海岸線
+    'WL',       # 水涯線
+    'WA',       # 水域
+    'WStrL',    # 水部構造物線
+    'WStrA',    # 水部構造物面
+    'BldL',     # 建築物の外周線
+    'BldA',     # 建築物
+    'RdEdg',    # 道路縁
+    'RdCompt',  # 道路構成線
+    'RailCL'    # 軌道の中心線
 )
 
 for ( tag in tags ){ 
