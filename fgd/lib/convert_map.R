@@ -37,7 +37,7 @@ main <- function(work_dir, input_dir, output_dir, l_name_symbol){
 
 work_dir='~/Downloads'
 input_dir='PackDLMap'
-output_dir='PackDLMap_output'
+output_dir='kiban_toyohashi_20190701'
 l_name_symbol <- list(
   #「基盤地図情報ダウンロードデータファイル仕様書4.1」参照
   c('測量の基準点', 'GCP'),
