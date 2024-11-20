@@ -1,0 +1,14 @@
+Send2Trash==1.8.0
+beautifulsoup4==4.11.1
+selenium==4.4.3
+openpyxl==3.0.10
+python-docx==0.8.11
+IMAPClient==2.3.1
+pyzmail36==1.0.5
+twilio
+ezgmail
+ezsheets
+PyAutoGUI
+pyperclip
+PyInputPlus
+python3-xlib==0.15
