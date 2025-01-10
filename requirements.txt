@@ -5,10 +5,10 @@ openpyxl==3.0.10
 python-docx==0.8.11
 IMAPClient==2.3.1
 pyzmail36==1.0.5
-twilio
-ezgmail
-ezsheets
-PyAutoGUI
-pyperclip
-PyInputPlus
+twilio==9.3.2
+EZGmail==2024.8.13
+EZSheets==2024.8.9
+PyAutoGUI==0.9.54
+pyperclip==1.9.0
+PyInputPlus==0.2.12
 python3-xlib==0.15
