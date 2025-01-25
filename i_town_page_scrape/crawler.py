@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, time
+import copy, os, pyautogui, random, time, urllib
 from pathlib import Path
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
@@ -10,91 +10,104 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-class Crawler():
-    def __init__(self, max_leafs=False, max_pois_per_leaf=-1):
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+import json
+
+from parser import Parser
+
+class Crawler(Parser):
+    def __init__(self, max_leafs=False):
         self.url = 'https://itp.ne.jp'
         self.dir_poi = 'output/poi'
         self.max_leafs = max_leafs
-        self.max_pois_per_leaf = max_pois_per_leaf
         
-    def _create_driver(self, url, headless):
+    def _create_driver(self, url):
         opt = webdriver.ChromeOptions()
-        if headless:
-            opt.add_argument('--headless')
+        user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        opt.add_argument(f"--user-agent={user_agent}")
+        opt.add_argument('--disable-blink-features=AutomationControlled')
         opt.add_argument('--no-sandbox')
         opt.add_argument('--disable-dev-shm-usage')
         driver = webdriver.Chrome(options=opt)
-        if not headless:
-            driver.set_window_size(640, 800)
-            driver.set_window_position(0, 0)
+        driver.set_window_position(0, 0)
+        driver.set_window_size(640, 800)
         driver.implicitly_wait(10)
         driver.get(url)
         return driver
+    
+    def _sleep(self):
+        time.sleep(random.randint(1,5))
+        
+    def _search(self, driver, area, keyword):
+        driver.find_element(By.ID, 'form1').find_element(
+            By.ID, 'keyword').send_keys(area)
+        driver.find_element(By.ID, 'form1').find_element(
+            By.NAME, 'word').send_keys(keyword)
+        driver.find_element(By.ID, 'form1').find_element(
+            By.TAG_NAME, 'button').click()
+        try:
+            self._sleep()
+            pyautogui.click(252, 444)
+            self._sleep()
+            pyautogui.click(315, 515)
+        except:
+            pass
+        quote_elements = WebDriverWait(driver, 240).until(
+            EC.presence_of_all_elements_located((
+                By.ID, 'footer')))
+        return driver
+    
+    def _update_url(self, url, pg):
+        pu = urllib.parse.urlparse(url)
+        d = urllib.parse.parse_qs(pu.query)
+        d['PG'] = str(pg)
+        return urllib.parse.urlunparse(pu._replace(
+            query=urllib.parse.urlencode(d, doseq=True)))
     
     def _save_html(self, path, html):
         os.makedirs(path.parent, exist_ok=True)
         print('saving', path)
         with open(path, 'w', encoding='utf-8') as f:
             f.write(html)
-            
-    def _search(self, driver, area, keyword):
-        driver.find_element(By.ID, 'form1'
-                            ).find_element(By.ID, 'keyword').send_keys(area)
-        driver.find_element(By.ID, 'form1'
-                            ).find_element(By.NAME, 'word').send_keys(keyword)
-        driver.find_element(By.ID, 'form1'
-                            ).find_element(By.TAG_NAME, 'button').click()
-        quote_elements = WebDriverWait(driver, 3).until(
-            EC.presence_of_all_elements_located((By.ID, 'footer')))
-    
-    def _move_next_leaf(self, driver):
-        url = driver.find_element(
-            By.CLASS_NAME, 'pager').find_element(
-                By.CLASS_NAME, 'next').find_element(
-                    By.CLASS_NAME, 'active').get_attribute('href')
-        driver.get(url)
-    
-    def _iter_poi_url(self, driver):
-        divs = driver.find_element(By.CLASS_NAME, 'result-list'
-                                   ).find_elements(By.XPATH, './div')
-        for i, div in enumerate(divs):
-            if div.get_attribute('class') not in ['', 'pager']:
-                yield div.find_element(By.TAG_NAME, 'a').get_attribute('href')
-                
-    def _crawl_pois(self, driver, area, keyword, i):
-        j = 0
-        for poi_url in self._iter_poi_url(driver):
-            j += 1
-            if self.max_pois_per_leaf == -1:
-                continue
-            if j <= self.max_pois_per_leaf or not self.max_pois_per_leaf:
-                with self._create_driver(poi_url, headless=True) as d:
-                    path = Path(f"output/{area}_{keyword}/poi/{i}_{j}.html")
-                    self._save_html(path, d.page_source)
-                time.sleep(1)
-            else:
-                break
-        return j
-    
+                    
     def crawl(self, area, keyword):
-        driver = self._create_driver(self.url, headless=False)
-        self._search(driver, area, keyword)
-        i = 0
-        while i < self.max_leafs or not self.max_leafs:
-            i += 1
-            j = self._crawl_pois(driver, area, keyword, i)
-            if j > 0:
-                path = Path(f"output/{area}_{keyword}/leaf/{i}.html")
-                self._save_html(path, driver.page_source)
+        def get_driver():
+            driver = self._create_driver(self.url)
+            driver = self._search(driver, area, keyword)
+            return driver
+        
+        def check_html():
+            rows = [[_]
+                    for _, __ in self._iter_name_address(path)]
+            return True if len(rows) > 0 else False
+
+        driver = False
+        f = 0; pg = 1
+        while f < 4 and (
+                pg <= self.max_leafs or not self.max_leafs):
+            
+            print(f"Getting html for pg {pg} ... ")
+            if not driver:
+                driver = get_driver()
+            url = self._update_url(driver.current_url, pg)
+            path = Path(f"output/{area}_{keyword}/leaf/{pg}.html")
             try:
-                self._move_next_leaf(driver)
+                driver.get(url)
+                self._save_html(path, driver.page_source)
+                if not check_html():
+                    raise
+                print(f"success.")
+                f = 0; pg += 1
             except:
-                break
-            time.sleep(1)
-        driver.quit()
+                print(f"failed.")
+                f += 1
+                driver.quit()
+                driver = False
+                time.sleep(200)
+            self._sleep()
+        if driver:
+            driver.quit()
         
 if __name__ == '__main__':
-    c = Crawler(
-        max_leafs=2, # 0: 全て
-        max_pois_per_leaf=-1)  # -1: 無し, 0: 全て
+    c = Crawler(max_leafs=2) # 0: 全て
     c.crawl(area='豊橋市', keyword='コンビニエンスストア')

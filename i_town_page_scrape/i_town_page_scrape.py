@@ -10,32 +10,11 @@ USAGE = '''
 
 import csv, glob, sys
 from pathlib import Path
-from bs4 import BeautifulSoup
 
 from crawler import Crawler
+from parser import Parser
     
-class ITwonPage():
-    def load_html(self, path):
-        print('loading', path)
-        with open(path, 'r', encoding='utf-8') as f:
-            html = str(f.readlines())
-        return html
-
-    def _iter_name_address(self, path):
-        def get_text(div, cls):
-            return div.find(class_=cls).get_text(strip=True).split('\\n')[0]
-        html = self.load_html(path)
-        soup = BeautifulSoup(html, 'html.parser')
-        divs = soup.select('.result-list>div')
-        l_name_address = []
-        for i, div in enumerate(divs, 1):
-            try:
-                name = get_text(div, 'result-item-head__ttl')
-                address = get_text(div, 'result-item-cts-desc__area')
-                yield name, address
-            except:
-                pass
-    
+class ITwonPage(Parser):
     def extract_data(self, area, keyword):
         with open(f"output/{area}_{keyword}/address.csv", 'w') as f:
             writer = csv.writer(f)
